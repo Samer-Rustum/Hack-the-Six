@@ -40,6 +40,8 @@ const verifyToken = (idToken) => {
 app.post('/createUser', (req, res) => {
     admin.auth().verifyIdToken(req.token)
         .then((token) => {
+
+            // Create a new user with doc name uid
             usersRef.doc(token.uid).set({
                 type: req.type,     // Buyer or Seller
                 outOrders: [],      // Outgoing orders (buyer)
@@ -53,9 +55,12 @@ app.post('/createUser', (req, res) => {
 
 // /getUser
 // Returns user information
+// Check /createUser for details
 app.post('/getUser', (req, res) => {
     admin.auth().verifyIdToken(req.token)
         .then((token) => {
+
+            // Get user corresponding with the token
             res.send(usersRef.doc(token.uid).get().data())
         })
         .catch();
@@ -63,23 +68,44 @@ app.post('/getUser', (req, res) => {
 
 // /getMarketData
 // Returns list of all available produce
+// {
+//      data: [{produce}, {produce}]
+// }
+// Check /addMarketItem for more details
 app.get('/getMarketData', (req, res) => {
+
+    // Get all documents in the market collection
     let data = [];
     marketRef.get().then((r) => {r.forEach(doc => {
         data.push(doc.data());
-        res.send(data);
     })});
+    res.send(data);
 });
 
 // /orderItem
 // A user orders an item
+// {
+//      item: {produce},
+// }
 app.post('/orderItem', (req, res) => {
     admin.auth().verifyIdToken(req.token)
         .then((token) => {
-            usersRef.doc(token.uid).get().data();
+
+            // Buyer updates
+            let buyerOrders = usersRef.doc(token.uid).get().data().outOrders;
+            buyerOrders.push(req.item);
             usersRef.doc(token.uid).update({
-                orders:"",
-            }).then((r) => res.send(r))
+                orders: buyerOrders,
+            });
+
+            // Seller updates
+            let sellerOrders = usersRef.doc(req.item.seller).get().data().inOrders;
+            sellerOrders.push(req.item);
+
+            usersRef.doc(req.item.seller).update({
+                orders: buyerOrders,
+            });
+
         })
         .catch();
 });
@@ -95,15 +121,19 @@ app.post('/markOrderDone', (req, res) => {
 // {
 //     name: "apple",
 //     price: "$9.93",
+//     seller: uid,
 // }
 app.post('/addMarketItem', (req, res) => {
     admin.auth().verifyIdToken(req.token)
         .then((token) => {
+
+            // Update market
             const currentMarket = usersRef.doc(token.uid).get().data().market;
             currentMarket.push(req.item);
             usersRef.doc(token.uid).update({
                 market: currentMarket,
             }).then((r) => res.send(r))
+
         })
         .catch();
 });
