@@ -14,23 +14,6 @@ const db = admin.firestore();
 const usersRef = db.collection('users');
 const marketRef = db.collection('market');
 
-// Helper Functions
-
-// Verify ID Token
-const verifyToken = (idToken) => {
-    let decodedToken = false;
-    admin.auth().verifyIdToken(idToken)
-        .then((token) => {decodedToken = token;})
-        .catch(() => {});
-
-    console.log(decodedToken);
-    if (decodedToken) {
-        return decodedToken;
-    } else {
-        throw "Could not verify ID token";
-    }
-};
-
 // APIs
 
 // /createUser
