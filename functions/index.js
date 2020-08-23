@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
+const axios = require('axios');
+
 const express = require('express');
 const cors = require('cors');
 
@@ -88,6 +90,18 @@ app.post('/orderItem', (req, res) => {
             usersRef.doc(req.item.seller).update({
                 orders: buyerOrders,
             });
+
+            // Send SMS confirmation through Autocode
+            axios.post('https://mam156572025.api.stdlib.com/farm-fresh@dev/', {
+                "number": "16472875887",
+                "message": "An order has been received.",
+            })
+                .then(response => {
+                    functions.logger.log(response);
+                })
+                .catch(error => {
+                    console.log(error);
+                });
 
         })
         .catch();
